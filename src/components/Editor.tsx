@@ -1,4 +1,5 @@
-import { Fragment, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/router";
 import { Button, Form, Input } from "antd";
 import {
   MinusOutlined,
@@ -9,6 +10,7 @@ import { generateArray } from "@/utils/arrayUtils";
 
 type Props = {
   onChange: (res: string[][]) => void;
+  initValue?: string;
 };
 
 type FieldData = {
@@ -24,32 +26,70 @@ const placeholderMap = [
   "in realistic style\nin cartoon style\nin anime style",
 ];
 
-export const Editor = ({ onChange }: Props) => {
-  const [groupNum, setGroupNum] = useState(2);
+const MIN_GROUP_NUM = 2;
+
+export const Editor = ({ onChange, initValue }: Props) => {
+  const router = useRouter();
+  const [groupNum, setGroupNum] = useState(MIN_GROUP_NUM);
 
   function onFieldsChange(changedFields: FieldData[], allFields: FieldData[]) {
     const res = allFields.map(({ value }) => value?.split("\n") ?? []);
 
     onChange(res);
-  }
 
+    // Update URL
+    router.replace({
+      pathname: router.pathname,
+      query: { d: JSON.stringify(res) },
+    });
+  }
   function addGroup() {
     setGroupNum((prev) => prev + 1);
   }
   function removeGroup() {
-    setGroupNum((prev) => Math.max(prev - 1, 1));
+    setGroupNum((prev) => Math.max(prev - 1, MIN_GROUP_NUM));
   }
 
+  const [form] = Form.useForm();
+  const [formInitialValues, setFormInitialValues] = useState({});
+  useEffect(() => {
+    if (initValue && form) {
+      try {
+        // load initial values from URL
+        const parsed = JSON.parse(initValue);
+        setGroupNum(parsed.length);
+        const init = parsed.reduce(
+          (acc: Record<string, string>, cur: string[], i: number) => {
+            acc[`group-${i}`] = cur.join("\n");
+            return acc;
+          },
+          {}
+        );
+        setFormInitialValues(init);
+      } catch (error) {
+        console.error("query-string parse fail:", error);
+      }
+    }
+  }, []);
+  useEffect(() => {
+    // reset the form to initial values
+    form.resetFields();
+  }, [formInitialValues]);
+
   return (
-    <Form onFieldsChange={onFieldsChange}>
+    <Form
+      form={form}
+      onFieldsChange={onFieldsChange}
+      initialValues={formInitialValues}
+    >
       <div className="flex flex-col items-center gap-2">
         {generateArray(groupNum).map((i) => (
           <Fragment key={i}>
             {i > 0 && <CaretDownOutlined />}
-            <Form.Item name={`group-${i + 1}`} noStyle>
+            <Form.Item name={`group-${i}`} noStyle>
               <Input.TextArea
                 rows={4}
-                cols={50}
+                cols={80}
                 placeholder={placeholderMap[i] || ""}
               />
             </Form.Item>
