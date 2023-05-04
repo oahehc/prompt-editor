@@ -31,11 +31,12 @@ const MIN_GROUP_NUM = 2;
 export const Editor = ({ onChange, initValue }: Props) => {
   const router = useRouter();
   const [groupNum, setGroupNum] = useState(MIN_GROUP_NUM);
+  const [tempRes, setTempRes] = useState<string[][]>([]);
 
   function onFieldsChange(changedFields: FieldData[], allFields: FieldData[]) {
     const res = allFields.map(({ value }) => value?.split("\n") ?? []);
 
-    onChange(res);
+    setTempRes(res);
 
     // Update URL
     router.replace({
@@ -47,8 +48,21 @@ export const Editor = ({ onChange, initValue }: Props) => {
     setGroupNum((prev) => prev + 1);
   }
   function removeGroup() {
-    setGroupNum((prev) => Math.max(prev - 1, MIN_GROUP_NUM));
+    setGroupNum((prev) => {
+      const newGroupNum = Math.max(prev - 1, MIN_GROUP_NUM);
+      removeFormItem(newGroupNum);
+
+      return newGroupNum;
+    });
   }
+  function removeFormItem(num: number) {
+    form.setFieldValue(`group-${num}`, undefined);
+    setTempRes((res) => res.slice(0, num));
+  }
+
+  useEffect(() => {
+    onChange(tempRes);
+  }, [tempRes]);
 
   const [form] = Form.useForm();
   const [formInitialValues, setFormInitialValues] = useState({});
@@ -58,7 +72,7 @@ export const Editor = ({ onChange, initValue }: Props) => {
         // load initial values from URL
         const parsed = JSON.parse(initValue);
         setGroupNum(parsed.length);
-        const init = parsed.reduce(
+        const init: Record<string, string> = parsed.reduce(
           (acc: Record<string, string>, cur: string[], i: number) => {
             acc[`group-${i}`] = cur.join("\n");
             return acc;
@@ -66,6 +80,7 @@ export const Editor = ({ onChange, initValue }: Props) => {
           {}
         );
         setFormInitialValues(init);
+        setTempRes(Object.values(init).map((v) => v.split("\n")));
       } catch (error) {
         console.error("query-string parse fail:", error);
       }
@@ -89,7 +104,7 @@ export const Editor = ({ onChange, initValue }: Props) => {
             <Form.Item name={`group-${i}`} noStyle>
               <Input.TextArea
                 rows={4}
-                cols={80}
+                cols={140}
                 placeholder={placeholderMap[i] || ""}
               />
             </Form.Item>
