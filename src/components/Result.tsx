@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { List } from "antd";
+import { List, Badge } from "antd";
 import { CopyButton } from "@/components/CopyButton";
 import { removeEmpty } from "@/utils/arrayUtils";
 
@@ -31,7 +31,8 @@ export const Result = ({ data }: Props) => {
       <List
         header={
           res.length > 0 ? (
-            <div className="flex justify-end">
+            <div className="flex justify-end items-center">
+              <Badge count={res.length} className="mx-2" color="#52c41a" />
               <CopyButton
                 type="primary"
                 btnText="Copy All"
