@@ -1,3 +1,4 @@
+import Head from "next/head";
 import { useEffect, useState } from "react";
 import { List, Badge } from "antd";
 import { CopyButton } from "@/components/CopyButton";
@@ -28,6 +29,11 @@ export const Result = ({ data }: Props) => {
 
   return (
     <div className="w-full mt-2">
+      {res.length > 0 && (
+        <Head>
+          <title>{res[0]}</title>
+        </Head>
+      )}
       <List
         header={
           res.length > 0 ? (
